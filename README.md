@@ -22,6 +22,7 @@ Ce plugin Moodle permet aux utilisateurs de sélectionner des activités de type
 - Sélection facile des activités de type "page".
 - Exportation en format Markdown.
 - Téléchargement en un seul fichier ZIP si plusieurs pages sont sélectionnées.
+- Copie rapide du Markdown dans le presse-papier.
 
 ## Contribuer
 
