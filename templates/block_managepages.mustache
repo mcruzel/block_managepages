@@ -3,6 +3,7 @@
     <form method="post" action="{{{exporturl}}}" id="export-form">
         <input type="hidden" name="sesskey" value="{{sesskey}}" />
         <input type="hidden" id="block-managepages-courseid" value="{{courseid}}" />
+        <input type="hidden" name="courseid" value="{{courseid}}">
         <div>
             <label>{{#str}} select_page_label, block_managepages {{/str}}</label>
             <div style="max-height:350px; overflow-y:auto; border:1px solid #ccc; padding:8px; width:100%;">
