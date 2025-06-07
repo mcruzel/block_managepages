@@ -20,4 +20,3 @@ $capabilities = array(
         ),
     ),
 );
-?>

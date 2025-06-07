@@ -14,4 +14,3 @@ $plugin->requires = 2022041900; // Requires this Moodle version
 $plugin->maturity = MATURITY_STABLE;
 $plugin->release = '1.0.0'; // Human-readable version name
 $plugin->dependencies = array(); // List of plugin dependencies
-?>

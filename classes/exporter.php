@@ -159,4 +159,3 @@ class exporter {
         return implode("\n---\n", $result);
     }
 }
-?>
