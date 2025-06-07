@@ -62,8 +62,12 @@
                 var data = await response.json();
                 textarea.value = data.markdown;
                 textarea.style.display = 'block';
-                textarea.select();
-                document.execCommand('copy');
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(textarea.value);
+                } else {
+                    textarea.select();
+                    document.execCommand('copy');
+                }
                 textarea.style.display = 'none';
                 alert('Contenu copié dans le presse-papier !');
             } else {
