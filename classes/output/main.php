@@ -52,7 +52,8 @@ class main implements renderable, templatable {
         return [
             'sections' => array_values($arbo),
             'exporturl' => new \moodle_url('/blocks/managepages/export.php', ['courseid' => $this->courseid]),
-            'sesskey' => sesskey()
+            'sesskey' => sesskey(),
+            'courseid' => $this->courseid
         ];
     }
 }
