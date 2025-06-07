@@ -78,7 +78,7 @@ if (optional_param('ajax', 0, PARAM_INT) == 1) {
 // Ensuite SEULEMENT la logique d'export classique
 $pageids = optional_param_array('page_ids', [], PARAM_INT);
 if (empty($pageids)) {
-    print_error('error:nopagesselected', 'block_managepages');
+    throw new \moodle_exception('error:nopagesselected', 'block_managepages');
 }
 $context = context_course::instance($courseid);
 require_capability('block/managepages:export', $context);
@@ -107,6 +107,6 @@ if (count($pages) === 1) {
         unlink($zipfile);
         exit;
     } else {
-        print_error('error:zipcreationfailed', 'block_managepages');
+        throw new \moodle_exception('error:zipcreationfailed', 'block_managepages');
     }
 }
