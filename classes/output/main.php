@@ -57,4 +57,3 @@ class main implements renderable, templatable {
         ];
     }
 }
-?>

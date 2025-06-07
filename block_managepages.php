@@ -50,4 +50,3 @@ class block_managepages extends block_base {
         return $OUTPUT->render_from_template($template, $renderable->export_for_template($OUTPUT));
     }
 }
-?>
