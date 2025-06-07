@@ -56,6 +56,25 @@ if (optional_param('ajax', 0, PARAM_INT) == 3 && $_SERVER['REQUEST_METHOD'] === 
     exit;
 }
 
+// Gestion AJAX de l'export vers le presse-papier
+if (optional_param('ajax', 0, PARAM_INT) == 1) {
+    $pageids = optional_param_array('page_ids', [], PARAM_INT);
+    if (empty($pageids)) {
+        header('Content-Type: application/json');
+        http_response_code(400);
+        echo json_encode(['error' => get_string('error:nopagesselected', 'block_managepages')]);
+        exit;
+    }
+    $context = context_course::instance($courseid);
+    require_capability('block/managepages:export', $context);
+    $exporter = new \block_managepages\exporter();
+    $pages = $exporter->fetch_selected_pages($pageids, $courseid);
+    $markdown = $exporter->get_structured_markdown($pages, $courseid);
+    header('Content-Type: application/json');
+    echo json_encode(['markdown' => $markdown]);
+    exit;
+}
+
 // Ensuite SEULEMENT la logique d'export classique
 $pageids = optional_param_array('page_ids', [], PARAM_INT);
 if (empty($pageids)) {
