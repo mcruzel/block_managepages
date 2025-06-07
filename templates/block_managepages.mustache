@@ -2,6 +2,7 @@
     <h2>{{#str}} select_pages, block_managepages {{/str}}</h2>
     <form method="post" action="{{{exporturl}}}" id="export-form">
         <input type="hidden" name="sesskey" value="{{sesskey}}" />
+        <input type="hidden" id="block-managepages-courseid" value="{{courseid}}" />
         <div>
             <label>{{#str}} select_page_label, block_managepages {{/str}}</label>
             <div style="max-height:350px; overflow-y:auto; border:1px solid #ccc; padding:8px; width:100%;">
@@ -49,6 +50,12 @@
                 return;
             }
             var courseid = new URLSearchParams(window.location.search).get('id');
+            if (!courseid) {
+                var courseInput = document.getElementById('block-managepages-courseid');
+                if (courseInput) {
+                    courseid = courseInput.value;
+                }
+            }
             var sesskey = document.querySelector('input[name="sesskey"]').value;
             var response = await fetch(M.cfg.wwwroot + '/blocks/managepages/export.php?ajax=1&sesskey=' + encodeURIComponent(sesskey) + '&courseid=' + courseid + '&page_ids[]=' + selected.join('&page_ids[]='));
             if (response.ok) {
@@ -69,6 +76,12 @@
                 e.preventDefault();
                 var pageid = btn.getAttribute('data-pageid');
                 var courseid = new URLSearchParams(window.location.search).get('id');
+                if (!courseid) {
+                    var courseInput = document.getElementById('block-managepages-courseid');
+                    if (courseInput) {
+                        courseid = courseInput.value;
+                    }
+                }
                 var sesskey = document.querySelector('input[name="sesskey"]').value;
                 try {
                     var response = await fetch(M.cfg.wwwroot + '/blocks/managepages/export.php?ajax=2&sesskey=' + encodeURIComponent(sesskey) + '&courseid=' + courseid + '&pageid=' + pageid);
