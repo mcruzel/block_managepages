@@ -1,0 +1,122 @@
+<?php
+/**
+ * Output renderable for block_managepages
+ *
+ * @package     block_managepages
+ * @copyright   2025 Maxime Cruzel
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+namespace block_managepages\output;
+
+defined('MOODLE_INTERNAL') || die();
+
+use renderable;
+use templatable;
+use renderer_base;
+use stdClass;
+
+class main implements renderable, templatable {
+    private $courseid;
+    public function __construct($courseid) {
+        $this->courseid = $courseid;
+    }
+    public function export_for_template(renderer_base $output) {
+        global $PAGE, $SCRIPT, $DB;
+        $modinfo = get_fast_modinfo($this->courseid);
+        $sections = $modinfo->get_section_info_all();
+        $arbo = array();        $issectionpage = false;
+        $currentsectionnum = null;
+        $currentsectionid = null;
+        if (strpos($SCRIPT, '/course/section.php') !== false) {
+            $issectionpage = true;
+            
+            // On essaie plusieurs paramètres possibles pour récupérer la section
+            $currentsectionid = optional_param('id', 0, PARAM_INT); // id de la section
+            $currentsectionnum = optional_param('section', 0, PARAM_INT); // numéro de section direct
+            $sectionrec = null;
+            
+            // Si on a un ID de section, on récupère les infos
+            if ($currentsectionid > 0) {
+                $sectionrec = $DB->get_record('course_sections', ['id' => $currentsectionid], 'section, name, id');
+                if ($sectionrec) {
+                    $currentsectionnum = $sectionrec->section;
+                }
+            }
+            // Si on a déjà le numéro de section directement
+            else if ($currentsectionnum > 0) {
+                $sectionrec = $DB->get_record('course_sections', ['course' => $this->courseid, 'section' => $currentsectionnum], 'section, name, id');
+            }
+            
+            // Debug : voyons tous les paramètres disponibles
+            error_log("DEBUG managepages - Tous les paramètres: " . print_r($_GET, true));
+            error_log("DEBUG managepages - currentsectionid: $currentsectionid, currentsectionnum: $currentsectionnum");
+        }
+
+        if ($issectionpage && $sectionrec && $currentsectionnum !== null) {
+            $sectionname = (isset($sectionrec->name) && trim((string)$sectionrec->name) !== '') ?
+                format_string($sectionrec->name) : get_string('section', 'moodle', $sectionrec->section);
+            $pages = [];
+            foreach ($modinfo->get_cms() as $cm) {
+                // On filtre strictement sur la section courante
+                if ($cm->modname === 'page' && $cm->uservisible && (int)$cm->sectionnum === (int)$currentsectionnum) {
+                    $pages[] = [
+                        'id' => $cm->instance,
+                        'name' => format_string($cm->name),
+                        'canedit' => true
+                    ];
+                }
+            }
+            // On ne garde que la section courante dans l'arborescence
+            $arbo = [];
+            $arbo[$currentsectionnum] = [
+                'name' => $sectionname,
+                'pages' => $pages
+            ];
+            // On force la sortie pour ne pas afficher d'autres sections
+            return [
+                'sections' => $arbo,
+                'exporturl' => new \moodle_url('/blocks/managepages/export.php', ['courseid' => $this->courseid]),
+                'sesskey' => sesskey(),
+                'courseid' => $this->courseid
+            ];
+        } else {
+            // Affichage normal (vue de cours)
+            foreach ($sections as $section) {
+                $sectionnum = $section->section;
+                if (empty($section->name) && $sectionnum == 0) {
+                    $sectionname = get_string('section0name', 'format_topics');
+                } else if (empty($section->name)) {
+                    $sectionname = get_string('section', 'moodle', $sectionnum);
+                } else {
+                    $sectionname = format_string($section->name);
+                }
+                $arbo[$sectionnum] = [
+                    'name' => $sectionname,
+                    'pages' => []
+                ];
+            }
+            foreach ($modinfo->get_cms() as $cm) {
+                if ($cm->modname === 'page' && $cm->uservisible) {
+                    $sectionnum = $cm->sectionnum;
+                    if (!isset($arbo[$sectionnum])) {
+                        $arbo[$sectionnum] = [
+                            'name' => get_string('section', 'moodle', $sectionnum),
+                            'pages' => []
+                        ];
+                    }
+                    $arbo[$sectionnum]['pages'][] = [
+                        'id' => $cm->instance,
+                        'name' => format_string($cm->name),
+                        'canedit' => true
+                    ];
+                }
+            }
+        }
+        return [
+            'sections' => $arbo,
+            'exporturl' => new \moodle_url('/blocks/managepages/export.php', ['courseid' => $this->courseid]),
+            'sesskey' => sesskey(),
+            'courseid' => $this->courseid
+        ];
+    }
+}

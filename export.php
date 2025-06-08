@@ -58,8 +58,7 @@ if (optional_param('ajax', 0, PARAM_INT) == 3 && $_SERVER['REQUEST_METHOD'] === 
 
 // Gestion AJAX de l'export vers le presse-papier
 if (optional_param('ajax', 0, PARAM_INT) == 1) {
-    $pageids = optional_param_array('page_ids', [], PARAM_INT);
-    if (empty($pageids)) {
+    $pageids = optional_param_array('page_ids', [], PARAM_INT);    if (empty($pageids)) {
         header('Content-Type: application/json');
         http_response_code(400);
         echo json_encode(['error' => get_string('error:nopagesselected', 'block_managepages')]);
