@@ -48,15 +48,17 @@ class block_managepages extends block_base {
         $renderable = new \block_managepages\output\main($COURSE->id);
         $template = 'block_managepages/block_managepages';
         return $OUTPUT->render_from_template($template, $renderable->export_for_template($OUTPUT));
-    }    /**
-     * Restreint l'ajout du bloc aux pages de cours uniquement.
+    }
+
+    /**
+     * Restreint l'ajout du bloc à la page principale du cours uniquement.
      *
      * @return array
      */
     public function applicable_formats() {
         return [
-            'course-view' => true, // Autorisé sur les pages de cours
-            'course' => true, // Autorisé sur toutes les pages de cours (incluant les sections)
+            'course-view' => true, // Autorisé uniquement sur la vue principale du cours.
+            'course' => false,
             'site-index'  => false,
             'my'          => false,
             'mod'         => false,

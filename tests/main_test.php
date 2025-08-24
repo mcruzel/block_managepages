@@ -201,7 +201,8 @@ class main_test extends \advanced_testcase {
         
         $this->assertCount(1, $all_pages);
         $this->assertTrue($all_pages[0]['canedit']);
-        $this->assertArrayHasKey('editurl', $all_pages[0]);
+        $this->assertArrayHasKey('editid', $all_pages[0]);
+        $this->assertArrayHasKey('downloadurl', $all_pages[0]);
         
         // Test as student (should NOT have edit capability)
         $this->setUser($student);
@@ -216,6 +217,7 @@ class main_test extends \advanced_testcase {
         
         $this->assertCount(1, $all_pages);
         $this->assertFalse($all_pages[0]['canedit']);
+        $this->assertArrayHasKey('downloadurl', $all_pages[0]);
     }
 
     /**

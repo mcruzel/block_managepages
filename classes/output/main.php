@@ -83,7 +83,11 @@ class main implements renderable, templatable {
                 $arbo[$sectionnum]['pages'][] = [
                     'id' => $cm->instance,
                     'name' => format_string($cm->name),
-                    'editurl' => new \moodle_url('/course/modedit.php', ['update' => $cm->id, 'return' => 1]),
+                    'downloadurl' => new \moodle_url('/blocks/managepages/export.php', [
+                        'courseid' => $this->courseid,
+                        'page_ids[]' => $cm->instance
+                    ]),
+                    'editid' => $cm->instance,
                     'canedit' => $canedit
                 ];
             }
