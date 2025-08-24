@@ -10,16 +10,18 @@
                 {{#sections}}
                     <div style="margin-bottom:0;">
                         <strong>{{name}}</strong>
-                        <ul style="margin:0; padding-left:20px;">                        {{#pages}}
+                        <ul style="margin:0; padding-left:20px;">
+                        {{#pages}}
                             <li style="margin:0; padding:0; list-style:none; display:flex; align-items:center; justify-content:space-between;">
                                 <label style="display:flex; align-items:center; margin:0; flex:1;">
                                     <input type="checkbox" name="page_ids[]" value="{{id}}" style="margin-right:5px;"> {{name}}
                                 </label>
-                                {{#canedit}}
-                                <a href="{{editurl}}" class="btn btn-sm btn-outline-secondary" style="margin-left:10px; font-size:12px; padding:2px 8px;" title="{{#str}} edit, moodle {{/str}}">
-                                    ✏️
-                                </a>
-                                {{/canedit}}
+                                <div style="display:flex; align-items:center;">
+                                    {{#canedit}}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary edit-page-btn" data-id="{{id}}" style="margin-left:10px; font-size:12px; padding:2px 8px;" title="{{#str}} edit, block_managepages {{/str}}">✏️</button>
+                                    {{/canedit}}
+                                    <a href="{{downloadurl}}" class="btn btn-sm btn-outline-secondary" style="margin-left:10px; font-size:12px; padding:2px 8px;" title="{{#str}} download, block_managepages {{/str}}">⬇️</a>
+                                </div>
                             </li>
                         {{/pages}}
                         </ul>
@@ -33,57 +35,124 @@
         </div>
     </form>
     <textarea id="markdown-content" style="display:none;"></textarea>
+
+    <div id="managepages-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+        <div style="background:#fff; margin:50px auto; padding:20px; width:80%; max-width:600px;">
+            <h3 id="managepages-modal-title"></h3>
+            <textarea id="managepages-modal-text" style="width:100%; height:300px;"></textarea>
+            <div style="margin-top:10px; text-align:right;">
+                <button type="button" id="managepages-modal-save">{{#str}} save, block_managepages {{/str}}</button>
+                <button type="button" id="managepages-modal-cancel">{{#str}} cancel, block_managepages {{/str}}</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     function block_managepages_init() {
         var form = document.getElementById('export-form');
         var copyBtn = document.getElementById('copy-markdown-btn');
         var textarea = document.getElementById('markdown-content');
-        if (!form || !copyBtn) return;
-          copyBtn.addEventListener('click', async function(e) {
-            e.preventDefault();
-            var checkboxes = document.querySelectorAll('input[name="page_ids[]"]:checked');
-            var selected = Array.from(checkboxes).map(cb => cb.value);
-            if (selected.length === 0) {
-                alert('Veuillez sélectionner au moins une page.');
-                return;
-            }              // Récupérer l'ID du cours depuis le champ hidden (méthode privilégiée)
-            var courseInput = document.getElementById('block-managepages-courseid');
-            var courseid = courseInput ? courseInput.value : null;
-            
-            // Si pas trouvé dans le champ, essayer l'URL comme fallback (mais pas le paramètre 'id' qui peut être une section)
-            if (!courseid) {
-                var urlParams = new URLSearchParams(window.location.search);
-                courseid = urlParams.get('course') || urlParams.get('courseid');            }
-            
-            if (!courseid) {
-                alert('Impossible de déterminer l\'ID du cours. URL: ' + window.location.href);
-                return;
-            }
-              var sesskey = document.querySelector('input[name="sesskey"]').value;
-            var exportUrl = M.cfg.wwwroot + '/blocks/managepages/export.php?ajax=1&sesskey=' + encodeURIComponent(sesskey) + '&courseid=' + courseid + '&page_ids[]=' + selected.join('&page_ids[]=');
-            
-            try {
-                var response = await fetch(exportUrl);
-                
-                if (response.ok) {
+        var modal = document.getElementById('managepages-modal');
+        var modalTitle = document.getElementById('managepages-modal-title');
+        var modalText = document.getElementById('managepages-modal-text');
+        var modalSave = document.getElementById('managepages-modal-save');
+        var modalCancel = document.getElementById('managepages-modal-cancel');
+        var msgSaved = '{{#str}} success:pagesaved, block_managepages {{/str}}';
+        var msgLoadErr = '{{#str}} error:loadpage, block_managepages {{/str}}';
+        var msgSaveErr = '{{#str}} error:savepage, block_managepages {{/str}}';
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                var checkboxes = document.querySelectorAll('input[name="page_ids[]"]:checked');
+                var selected = Array.from(checkboxes).map(cb => cb.value);
+                if (selected.length === 0) {
+                    alert('Veuillez sélectionner au moins une page.');
+                    return;
+                }
+                var courseInput = document.getElementById('block-managepages-courseid');
+                var courseid = courseInput ? courseInput.value : null;
+                if (!courseid) {
+                    var urlParams = new URLSearchParams(window.location.search);
+                    courseid = urlParams.get('course') || urlParams.get('courseid');
+                }
+                if (!courseid) {
+                    alert('Impossible de déterminer l\'ID du cours. URL: ' + window.location.href);
+                    return;
+                }
+                var sesskey = document.querySelector('input[name="sesskey"]').value;
+                var exportUrl = M.cfg.wwwroot + '/blocks/managepages/export.php?ajax=1&sesskey=' + encodeURIComponent(sesskey) + '&courseid=' + courseid + '&page_ids[]=' + selected.join('&page_ids[]=');
+
+                try {
+                    var response = await fetch(exportUrl);
+                    if (response.ok) {
+                        var data = await response.json();
+                        textarea.value = data.markdown;
+                        textarea.style.display = 'block';
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(textarea.value);
+                        } else {
+                            textarea.select();
+                            document.execCommand('copy');
+                        }
+                        textarea.style.display = 'none';
+                        alert('Contenu copié dans le presse-papier !');
+                    } else {
+                        var errorText = await response.text();
+                        alert('Erreur lors de la récupération du contenu Markdown. Status: ' + response.status + '\nVoir la console pour plus de détails.');
+                    }
+                } catch (error) {
+                    alert('Erreur réseau lors de la récupération du contenu Markdown: ' + error.message);
+                }
+            });
+        }
+
+        document.querySelectorAll('.edit-page-btn').forEach(function(btn) {
+            btn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                var pageid = this.getAttribute('data-id');
+                var courseid = document.getElementById('block-managepages-courseid').value;
+                var sesskey = document.querySelector('input[name="sesskey"]').value;
+                var url = M.cfg.wwwroot + '/blocks/managepages/export.php?ajax=2&courseid=' + courseid + '&pageid=' + pageid + '&sesskey=' + encodeURIComponent(sesskey);
+                try {
+                    var response = await fetch(url);
+                    if (!response.ok) throw new Error();
                     var data = await response.json();
-                textarea.value = data.markdown;
-                textarea.style.display = 'block';
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(textarea.value);
-                } else {
-                    textarea.select();
-                    document.execCommand('copy');
-                }                    textarea.style.display = 'none';                    alert('Contenu copié dans le presse-papier !');
-                } else {
-                    var errorText = await response.text();
-                    alert('Erreur lors de la récupération du contenu Markdown. Status: ' + response.status + '\nVoir la console pour plus de détails.');                }
-            } catch (error) {
-                alert('Erreur réseau lors de la récupération du contenu Markdown: ' + error.message);
+                    modalTitle.textContent = data.name;
+                    modalText.value = data.content;
+                    modal.setAttribute('data-pageid', pageid);
+                    modal.style.display = 'block';
+                } catch (err) {
+                    alert(msgLoadErr);
+                }
+            });
+        });
+
+        modalSave.addEventListener('click', async function() {
+            var pageid = modal.getAttribute('data-pageid');
+            var courseid = document.getElementById('block-managepages-courseid').value;
+            var sesskey = document.querySelector('input[name="sesskey"]').value;
+            var content = modalText.value;
+            var url = M.cfg.wwwroot + '/blocks/managepages/export.php?ajax=3&courseid=' + courseid + '&pageid=' + pageid + '&sesskey=' + encodeURIComponent(sesskey);
+            try {
+                var response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'content=' + encodeURIComponent(content)
+                });
+                if (!response.ok) throw new Error();
+                modal.style.display = 'none';
+                alert(msgSaved);
+            } catch (err) {
+                alert(msgSaveErr);
             }
         });
+
+        modalCancel.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
     }
-    
+
     window.addEventListener('DOMContentLoaded', block_managepages_init);
     </script>
     {{#message}}

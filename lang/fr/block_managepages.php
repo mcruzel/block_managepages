@@ -5,6 +5,7 @@ $string['select_pages'] = 'Sélectionnez les pages à exporter';
 $string['select_page_label'] = 'Pages disponibles';
 $string['export_markdown'] = 'Exporter en Markdown';
 $string['copy_to_clipboard'] = 'Copier dans le presse-papier';
+$string['download'] = 'Télécharger';
 $string['error:nopagesselected'] = 'Aucune page sélectionnée. Veuillez sélectionner au moins une page.';
 $string['error:zipcreationfailed'] = 'Erreur lors de la création du fichier ZIP. Veuillez réessayer.';
 $string['privacy:metadata'] = 'Ce plugin ne stocke aucune donnée personnelle.';
