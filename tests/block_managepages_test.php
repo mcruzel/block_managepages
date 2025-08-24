@@ -51,10 +51,10 @@ class block_managepages_test extends \advanced_testcase {
         $block = new \block_managepages();
         $formats = $block->applicable_formats();
         
-        // Should be available on course pages
+        // Should be available only on main course view page
         $this->assertTrue($formats['course-view']);
-        $this->assertTrue($formats['course']);
-        
+        $this->assertFalse($formats['course']);
+
         // Should NOT be available on other pages
         $this->assertFalse($formats['site-index']);
         $this->assertFalse($formats['my']);
