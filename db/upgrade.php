@@ -37,5 +37,11 @@ function xmldb_block_managepages_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2025060805, 'managepages');
     }
 
+    if ($oldversion < 2025060806) {
+        // Version 1.2.3 - Suppression du fichier install.xml inutile.
+        // Aucun changement de structure de base de données nécessaire.
+        upgrade_block_savepoint(true, 2025060806, 'managepages');
+    }
+
     return true;
 }
