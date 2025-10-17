@@ -44,10 +44,40 @@ class block_managepages extends block_base {
      * @return string
      */
     private function render_export_form() {
-        global $OUTPUT, $COURSE;
-        $renderable = new \block_managepages\output\main($COURSE->id);
+        global $OUTPUT;
+        $courseid = $this->resolve_courseid();
+        $renderable = new \block_managepages\output\main($courseid);
         $template = 'block_managepages/block_managepages';
         return $OUTPUT->render_from_template($template, $renderable->export_for_template($OUTPUT));
+    }
+
+    /**
+     * Résout l'identifiant du cours à partir du contexte ou des paramètres de la requête.
+     *
+     * @return int
+     * @throws moodle_exception Lorsque le cours ne peut pas être déterminé.
+     */
+    private function resolve_courseid(): int {
+        global $COURSE;
+
+        if (!empty($COURSE) && !empty($COURSE->id)) {
+            return (int) $COURSE->id;
+        }
+
+        if (!empty($this->page) && !empty($this->page->course) && !empty($this->page->course->id)) {
+            return (int) $this->page->course->id;
+        }
+
+        $courseid = optional_param('courseid', 0, PARAM_INT);
+        if (!$courseid) {
+            $courseid = optional_param('id', 0, PARAM_INT);
+        }
+
+        if ($courseid) {
+            return (int) $courseid;
+        }
+
+        throw new \moodle_exception('error:missingcourseid', 'block_managepages');
     }
 
     /**

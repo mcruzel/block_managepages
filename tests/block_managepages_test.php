@@ -131,17 +131,36 @@ class block_managepages_test extends \advanced_testcase {
         // Create test course without pages
         $course = $this->getDataGenerator()->create_course();
         $this->setCurrentCourse($course);
-        
+
         // Create block and get content
         $block = new \block_managepages();
         $block->init();
-        
+
         global $COURSE;
         $COURSE = $course;
-        
+
         $content = $block->get_content();
-        
+
         // Should still return content even with no pages
+        $this->assertNotNull($content);
+        $this->assertNotNull($content->text);
+    }
+
+    /**
+     * Test block behaviour when global course is missing but page context is available.
+     */
+    public function test_block_content_without_global_course() {
+        $course = $this->getDataGenerator()->create_course();
+        $this->setCurrentCourse($course);
+
+        global $COURSE;
+        $COURSE = null;
+
+        $block = new \block_managepages();
+        $block->init();
+
+        $content = $block->get_content();
+
         $this->assertNotNull($content);
         $this->assertNotNull($content->text);
     }

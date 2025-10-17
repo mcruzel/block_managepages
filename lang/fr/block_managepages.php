@@ -9,6 +9,7 @@ $string['download'] = 'Télécharger';
 $string['download_all'] = 'Tout télécharger';
 $string['error:nopagesselected'] = 'Aucune page sélectionnée. Veuillez sélectionner au moins une page.';
 $string['error:zipcreationfailed'] = 'Erreur lors de la création du fichier ZIP. Veuillez réessayer.';
+$string['error:missingcourseid'] = 'Impossible de déterminer le cours associé à ce bloc.';
 $string['privacy:metadata'] = 'Ce plugin ne stocke aucune donnée personnelle.';
 $string['edit'] = 'Modifier';
 $string['edit_page_title'] = 'Modifier : {$a}';
