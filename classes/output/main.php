@@ -22,6 +22,13 @@ class main implements renderable, templatable {
         $this->courseid = $courseid;
     }    public function export_for_template(renderer_base $output) {
         global $PAGE, $SCRIPT, $DB;
+
+        // Load the AMD module for JavaScript functionality
+        $PAGE->requires->js_call_amd('block_managepages/managepages', 'init', [
+            $this->courseid,
+            sesskey()
+        ]);
+
         $modinfo = get_fast_modinfo($this->courseid);
         $sections = $modinfo->get_section_info_all();
         $arbo = array();

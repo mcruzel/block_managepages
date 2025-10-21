@@ -126,14 +126,25 @@ class exporter_test extends \advanced_testcase {
      */
     public function test_get_clean_filename() {
         $exporter = new \block_managepages\exporter();
-        
+
         // Test various filename scenarios
         $this->assertEquals('normal_filename', $exporter->get_clean_filename('normal filename'));
         $this->assertEquals('Special_Characters', $exporter->get_clean_filename('Special @#$% Characters!'));
         $this->assertEquals('numbers_123_test', $exporter->get_clean_filename('numbers 123 test'));
-        $this->assertEquals('', $exporter->get_clean_filename('   '));
-        $this->assertEquals('hyphen-test', $exporter->get_clean_filename('hyphen-test'));
+        $this->assertEquals('unnamed', $exporter->get_clean_filename('   ')); // Changed: empty string should return 'unnamed'
+        $this->assertEquals('hyphen_test', $exporter->get_clean_filename('hyphen-test')); // Hyphens converted to underscores
         $this->assertEquals('underscore_test', $exporter->get_clean_filename('underscore_test'));
+
+        // Test HTML tag removal
+        $this->assertEquals('test_file', $exporter->get_clean_filename('<b>test</b> file'));
+
+        // Test empty input returns default
+        $this->assertEquals('unnamed', $exporter->get_clean_filename(''));
+
+        // Test long filename is truncated
+        $longname = str_repeat('a', 300);
+        $result = $exporter->get_clean_filename($longname);
+        $this->assertLessThanOrEqual(\block_managepages\exporter::MAX_FILENAME_LENGTH, strlen($result));
     }
 
     /**
@@ -250,8 +261,156 @@ class exporter_test extends \advanced_testcase {
      */
     public function test_get_page_content_invalid_id() {
         $exporter = new \block_managepages\exporter();
-        
+
         $this->expectException(\dml_missing_record_exception::class);
         $exporter->get_page_content(99999); // Non-existent page ID
     }
+
+    /**
+     * Test fetch_selected_pages with empty array throws exception
+     */
+    public function test_fetch_selected_pages_empty_array() {
+        $course = $this->getDataGenerator()->create_course();
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->fetch_selected_pages([], $course->id);
+    }
+
+    /**
+     * Test fetch_selected_pages with invalid course ID
+     */
+    public function test_fetch_selected_pages_invalid_course() {
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->fetch_selected_pages([1, 2], 999999);
+    }
+
+    /**
+     * Test fetch_selected_pages with too many pages
+     */
+    public function test_fetch_selected_pages_exceeds_max() {
+        $course = $this->getDataGenerator()->create_course();
+        $exporter = new \block_managepages\exporter();
+
+        $pageids = range(1, \block_managepages\exporter::MAX_PAGES + 1);
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $this->expectExceptionMessage('Too many pages selected');
+        $exporter->fetch_selected_pages($pageids, $course->id);
+    }
+
+    /**
+     * Test convert_to_markdown with empty array throws exception
+     */
+    public function test_convert_to_markdown_empty_array() {
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->convert_to_markdown([]);
+    }
+
+    /**
+     * Test convert_to_markdown with invalid input
+     */
+    public function test_convert_to_markdown_invalid_input() {
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->convert_to_markdown('not an array');
+    }
+
+    /**
+     * Test create_zip with empty array throws exception
+     */
+    public function test_create_zip_empty_array() {
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\coding_exception::class);
+        $exporter->create_zip([]);
+    }
+
+    /**
+     * Test get_page_content with negative ID throws exception
+     */
+    public function test_get_page_content_negative_id() {
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->get_page_content(-1);
+    }
+
+    /**
+     * Test get_structured_markdown with empty pages array
+     */
+    public function test_get_structured_markdown_empty_array() {
+        $course = $this->getDataGenerator()->create_course();
+        $exporter = new \block_managepages\exporter();
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->get_structured_markdown([], $course->id);
+    }
+
+    /**
+     * Test get_structured_markdown with invalid course ID
+     */
+    public function test_get_structured_markdown_invalid_course_id() {
+        $exporter = new \block_managepages\exporter();
+
+        $pages = [(object)['id' => 1, 'name' => 'Test', 'content' => 'Content']];
+
+        $this->expectException(\invalid_parameter_exception::class);
+        $exporter->get_structured_markdown($pages, -1);
+    }
+
+    /**
+     * Test fetch_selected_pages sanitizes IDs correctly
+     */
+    public function test_fetch_selected_pages_sanitizes_ids() {
+        $course = $this->getDataGenerator()->create_course();
+
+        $page = $this->getDataGenerator()->create_module('page', [
+            'course' => $course->id,
+            'name' => 'Test Page',
+            'content' => '<p>Test content</p>'
+        ]);
+
+        $exporter = new \block_managepages\exporter();
+
+        // Test with duplicate IDs and zero/negative values
+        $pageids = [$page->id, $page->id, 0, -1, $page->id];
+        $pages = $exporter->fetch_selected_pages($pageids, $course->id);
+
+        // Should only return one page (duplicates removed, invalid IDs filtered)
+        $this->assertCount(1, $pages);
+        $this->assertEquals('Test Page', $pages[0]->name);
+    }
+
+    /**
+     * Test create_zip creates valid ZIP file
+     */
+    public function test_create_zip_valid_structure() {
+        $exporter = new \block_managepages\exporter();
+
+        $files = [
+            'test1.md' => 'Content 1',
+            'folder/test2.md' => 'Content 2'
+        ];
+
+        $zippath = $exporter->create_zip($files);
+
+        $this->assertNotFalse($zippath);
+        $this->assertFileExists($zippath);
+        $this->assertGreaterThan(0, filesize($zippath));
+
+        // Verify ZIP is valid
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($zippath));
+        $zip->close();
+
+        // Clean up
+        unlink($zippath);
+    }
 }
+
